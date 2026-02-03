@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="UIClickerGPUAlgorithmTester.ppr"/>
+        <FRMtype Value="0"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="0"/>
+        <CursorPos Y="26"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <FRMtype Value="200"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmUIClickerGPUAlgorithmTester"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="120"/>
+        <CursorPos X="48" Y="134"/>
+        <UsageCount Value="22"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\UIClicker\Tests\UI\UITestUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="43"/>
+        <CursorPos X="47" Y="56"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\UIClicker\ClickerUtils\ClickerUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="482"/>
+        <CursorPos X="10" Y="504"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\MiscUtils\InMemFileSystem.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <TopLine Value="-1"/>
+        <CursorPos X="-1" Y="-1"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\UIClicker\ClickerUtils\ClickerActionsClient.pas"/>
+        <FRMtype Value="0"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="264"/>
+        <CursorPos X="42" Y="276"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\UIClicker\ClickerUtils\ClickerExtraUtils.pas"/>
+        <FRMtype Value="0"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="23"/>
+        <CursorPos X="50" Y="32"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\UIClicker\ClickerUtils\ClickerCLUtils.pas"/>
+        <FRMtype Value="0"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="34"/>
+        <CursorPos X="31" Y="50"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="28">
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="55" Column="18" TopLine="25"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="67" Column="11" TopLine="48"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="68" Column="23" TopLine="55"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="93" Column="27" TopLine="77"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="81" Column="34" TopLine="77"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="82" Column="37" TopLine="77"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="91" Column="29" TopLine="79"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="92" Column="18" TopLine="85"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="43" Column="16" TopLine="36"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="24" Column="22" TopLine="13"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="131" Column="6" TopLine="110"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="50" Column="19" TopLine="30"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="93" Column="14" TopLine="76"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="86" Column="28" TopLine="70"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="94" Column="46" TopLine="80"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="122" Column="32" TopLine="107"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="135" Column="30" TopLine="115"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="109" TopLine="70"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="118" Column="58" TopLine="107"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="120" Column="82" TopLine="102"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="131" Column="33" TopLine="125"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="173" Column="41" TopLine="152"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="163" Column="67" TopLine="155"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="173" Column="47" TopLine="161"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="160" Column="30" TopLine="149"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="28" Column="24" TopLine="20"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="10" Column="40"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="133" Column="43" TopLine="115"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="125" Column="100" TopLine="118"/>
+      </Position>
+      <Position>
+        <Filename Value="UIClickerGPUAlgorithmTesterMainForm.pas"/>
+        <Caret Line="34" Column="93" TopLine="22"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>

@@ -489,7 +489,7 @@ object frmUIClickerGPUAlgorithmTester: TfrmUIClickerGPUAlgorithmTester
       00000049454E44AE426082
     }
   end
-  object imgDevice1: TImage
+  object imgGPUOption: TImage
     Left = 368
     Height = 16
     Top = 8

@@ -37,7 +37,7 @@ type
   { TfrmUIClickerGPUAlgorithmTester }
 
   TfrmUIClickerGPUAlgorithmTester = class(TForm)
-    imgDevice1: TImage;
+    imgGPUOption: TImage;
     imgPlatform: TImage;
     imgDevice: TImage;
     lblPlatform: TLabel;
@@ -59,6 +59,7 @@ type
     FRunner_Proc: TAsyncProcess;
     FPaused: Boolean;
     FStopping: Boolean;
+    FAuthStr: string;
 
     procedure AddToLog(s: string);
     procedure StartTestRunner;
@@ -106,9 +107,10 @@ end;
 procedure TfrmUIClickerGPUAlgorithmTester.StartTestRunner;
 var
   PathToTestRunner: string;
+  AuthStr: string;
 begin
   PathToTestRunner := ExtractFilePath(ParamStr(0)) + '..\UIClicker\Tests\UIClickerHTTPTests.exe';
-  FRunner_Proc := CreateUIClickerProcess(PathToTestRunner, '--StartServer');
+  FRunner_Proc := CreateUIClickerProcess(PathToTestRunner, '--StartServer --Auth ' + FAuthStr);
 end;
 
 
@@ -128,11 +130,18 @@ var
   ListOfUIClickerVars: TStringList;
   i, PlatformCount: Integer;
 begin
-  Params := '$SetPlatformsAndDevices$=False';
+  Params := '$SetPlatformsAndDevices$=False' + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
   Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_SetTestVars + '?' + Params);  //should be something like 'BeforeAll_AlwaysExecute=tsPassed(::)(:.:)$RemoteExecResponse$=1$Control_Text$=...'
-  Expect(Response).ToBe('Done');
 
-  Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_RunCategory + '?' + 'Category=' + CGetGPUInfoCategoryName);
+  try
+    Expect(Response).ToBe('Done');
+  except
+    on E: Exception do
+      AddToLog('GetCLInfoFromRunner: ' + E.Message);
+  end;
+
+  Params := 'Category=' + CGetGPUInfoCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+  Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_RunCategory + '?' + Params);
 
   UIClickerVars := Copy(Response, Pos(CSecondSeparator, Response) + Length(CSecondSeparator), MaxInt);
 
@@ -208,12 +217,23 @@ begin
             '$SelectedPlatorm$=' + IntToStr(APlatformIndex) + '&' +
             '$SelectedDevice$=' + IntToStr(ADeviceIndex) + '&' +
             '$SetGPUDbgBuffer$=True' + '&' +
+            CPitstopCmd_Param_Auth + '=' + FAuthStr + '&' +
             AGPUOptions;
 
   Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_SetTestVars + '?' + Params);  //should be something like 'BeforeAll_AlwaysExecute=tsPassed(::)(:.:)$RemoteExecResponse$=1$Control_Text$=...'
-  Expect(Response).ToBe('Done');
 
-  Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_RunCategory + '?' + 'Category=' + CFindSubControlOnGPUCategoryName);
+  try
+    Expect(Response).ToBe('Done');
+  except
+    on E: Exception do
+    begin
+      AddToLog('RunGPUTestPerTarget, SetTestVars: ' + E.Message);
+      Exit;
+    end;
+  end;
+
+  Params := 'Category=' + CFindSubControlOnGPUCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+  Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_RunCategory + '?' + Params);
 
   AddToLog('Platform ' + IntToStr(APlatformIndex) + ', Device ' + IntToStr(ADeviceIndex) + ', GPUOption ' + IntToStr(AGPUOptionIndex) + ': ');
   ListOfTests := TStringList.Create;
@@ -328,16 +348,30 @@ begin
   FPaused := False;
   FStopping := True;
   AddToLog('Stopping...');
-  SendTextRequestToServer('http://127.0.0.1:7472/StopTests');
+  SendTextRequestToServer('http://127.0.0.1:7472/StopTests' + '?' + CPitstopCmd_Param_Auth + '=' + FAuthStr);
 end;
 
 
 procedure TfrmUIClickerGPUAlgorithmTester.FormCreate(Sender: TObject);
+var
+  i, NewValue: Integer;
 begin
   SetLength(FDeviceCount, 0);
   FRunner_Proc := nil;
   FPaused := False;
   FStopping := False;
+
+  FAuthStr := 'abx';
+  Randomize;
+  NewValue := Random(MaxInt);
+  for i := 0 to Random(10) do
+  begin
+    Inc(NewValue, Random(MaxInt));
+    FAuthStr := FAuthStr + IntToStr(GetTickCount64 + NewValue);
+    Sleep(33);
+    Randomize;
+  end;
+
 end;
 
 
@@ -348,12 +382,12 @@ begin
   if FPaused then
   begin
     AddToLog('Paused...');
-    SendTextRequestToServer('http://127.0.0.1:7472/PauseTests')
+    SendTextRequestToServer('http://127.0.0.1:7472/PauseTests' + '?' + CPitstopCmd_Param_Auth + '=' + FAuthStr)
   end
   else
   begin
     AddToLog('Running...');
-    SendTextRequestToServer('http://127.0.0.1:7472/ContinueTests');
+    SendTextRequestToServer('http://127.0.0.1:7472/ContinueTests' + '?' + CPitstopCmd_Param_Auth + '=' + FAuthStr);
   end;
 end;
 

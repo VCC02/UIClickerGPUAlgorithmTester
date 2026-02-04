@@ -107,7 +107,6 @@ end;
 procedure TfrmUIClickerGPUAlgorithmTester.StartTestRunner;
 var
   PathToTestRunner: string;
-  AuthStr: string;
 begin
   PathToTestRunner := ExtractFilePath(ParamStr(0)) + '..\UIClicker\Tests\UIClickerHTTPTests.exe';
   FRunner_Proc := CreateUIClickerProcess(PathToTestRunner, '--StartServer --Auth ' + FAuthStr);
@@ -193,6 +192,8 @@ begin
         Result := 'Bad index ' + IntToStr(i);
       end;
     end;
+
+    Result := Result + CGPUDbgVar_AdditionalGPUInfo + '=' + ListOfGPUDbgResults.Values[CGPUDbgVar_AdditionalGPUInfo];
   finally
     ListOfGPUDbgResults.Free;
   end;
@@ -348,7 +349,7 @@ begin
   FPaused := False;
   FStopping := True;
   AddToLog('Stopping...');
-  SendTextRequestToServer('http://127.0.0.1:7472/StopTests' + '?' + CPitstopCmd_Param_Auth + '=' + FAuthStr);
+  SendTextRequestToServer('http://127.0.0.1:7472/StopTests' + '?' + CPitstopCmd_Param_StoppingNow + '=' + 'False' + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr);
 end;
 
 
@@ -367,11 +368,10 @@ begin
   for i := 0 to Random(10) do
   begin
     Inc(NewValue, Random(MaxInt));
-    FAuthStr := FAuthStr + IntToStr(GetTickCount64 + NewValue);
+    FAuthStr := FAuthStr + IntToStr(GetTickCount64 + NewValue) + IntToStr(Random(MaxInt)) + IntToStr(Random(MaxInt));
     Sleep(33);
     Randomize;
   end;
-
 end;
 
 

@@ -65,6 +65,10 @@
         <Filename Value="..\MiscUtils\PitstopTestUtils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="..\UIClicker\Tests\GPUTestUtils.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -75,7 +79,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="..\UIClicker\Tests\UI;..\UIClicker\ClickerUtils;..\MiscUtils"/>
+      <OtherUnitFiles Value="..\UIClicker\Tests\UI;..\UIClicker\ClickerUtils;..\MiscUtils;..\UIClicker\Tests"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>

@@ -30,7 +30,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Buttons, AsyncProcess,
-  StdCtrls, ComCtrls, ExtCtrls, ClickerUtils, ClickerCLUtils;
+  StdCtrls, ComCtrls, ExtCtrls, ClickerUtils, ClickerCLUtils, GPUTestUtils;
 
 type
 
@@ -51,11 +51,13 @@ type
     spdbtnRunAll: TSpeedButton;
     spdbtnStop: TSpeedButton;
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
     procedure spdbtnPauseClick(Sender: TObject);
     procedure spdbtnRunAllClick(Sender: TObject);
     procedure spdbtnStopClick(Sender: TObject);
   private
-    FDeviceCount: TIntArr; //The length of this array is PlatformCount.
+    FGPUInfo: TPlatformInfoArr;
+
     FRunner_Proc: TAsyncProcess;
     FPaused: Boolean;
     FStopping: Boolean;
@@ -64,7 +66,10 @@ type
     procedure AddToLog(s: string);
     procedure StartTestRunner;
     procedure StopTestRunner;
+
     procedure GetCLInfoFromRunner;
+    procedure AddCLInfoToLog;
+
     procedure RunGPUTestPerTarget(APlatformIndex, ADeviceIndex, AGPUOptionIndex: Integer; AGPUOptions: string);
   public
 
@@ -126,8 +131,6 @@ end;
 procedure TfrmUIClickerGPUAlgorithmTester.GetCLInfoFromRunner;
 var
   Response, Params, UIClickerVars: string;
-  ListOfUIClickerVars: TStringList;
-  i, PlatformCount: Integer;
 begin
   Params := '$SetPlatformsAndDevices$=False' + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
   Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_SetTestVars + '?' + Params);  //should be something like 'BeforeAll_AlwaysExecute=tsPassed(::)(:.:)$RemoteExecResponse$=1$Control_Text$=...'
@@ -143,22 +146,7 @@ begin
   Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_RunCategory + '?' + Params);
 
   UIClickerVars := Copy(Response, Pos(CSecondSeparator, Response) + Length(CSecondSeparator), MaxInt);
-
-  ListOfUIClickerVars := TStringList.Create;
-  try
-    ListOfUIClickerVars.LineBreak := #13#10;
-    ListOfUIClickerVars.Text := FastReplace_87ToReturn(UIClickerVars);
-
-    PlatformCount := StrToIntDef(ListOfUIClickerVars.Values['$CL.PlatformCount$'], 0);
-    if (PlatformCount > 0) and (PlatformCount < 100) then
-    begin
-      SetLength(FDeviceCount, PlatformCount);
-      for i := 0 to Length(FDeviceCount) - 1 do
-        FDeviceCount[i] := StrToIntDef(ListOfUIClickerVars.Values['$CL.DeviceCount[' + IntToStr(i) + ']$'], 0);
-    end;
-  finally
-    ListOfUIClickerVars.Free;
-  end;
+  DecodeCLInfoFromUIClickerVars(FastReplace_87ToReturn(UIClickerVars), FGPUInfo);
 end;
 
 
@@ -277,6 +265,34 @@ begin
 end;
 
 
+procedure TfrmUIClickerGPUAlgorithmTester.AddCLInfoToLog;
+var
+  i, j: Integer;
+  istr, jstr, ijstr: string;
+begin
+  AddToLog('Platform count: ' + IntToStr(Length(FGPUInfo)));
+  for i := 0 to Length(FGPUInfo) - 1 do
+  begin
+    istr := IntToStr(i);
+    AddToLog('  PlatformName[' + istr + ']: ' + Copy(FGPUInfo[i].PlatformName, 1, 1));
+    AddToLog('  PlatformVersion[' + istr + ']: ' + FGPUInfo[i].PlatformVersion);
+    AddToLog('  PlatformExtensions[' + istr + ']: ' + FGPUInfo[i].PlatformExtensions);
+
+    AddToLog('  Device count[' + istr + ']: ' + IntToStr(Length(FGPUInfo[i].Devices)));
+    for j := 0 to Length(FGPUInfo[i].Devices) - 1 do
+    begin
+      jstr := IntToStr(j);
+      ijstr := istr + ', ' + jstr;
+      AddToLog('    DeviceName[' + ijstr + ']: ' + Copy(FGPUInfo[i].Devices[j].DeviceName, 1, 1));
+      AddToLog('    DeviceVersion[' + ijstr + ']: ' + FGPUInfo[i].Devices[j].DeviceVersion);
+      AddToLog('    DeviceOpenCLCVersion[' + ijstr+ ']: ' + FGPUInfo[i].Devices[j].DeviceOpenCLCVersion);
+      AddToLog('    DevicePlatformVersion[' + ijstr + ']: ' + FGPUInfo[i].Devices[j].DevicePlatformVersion);
+      AddToLog('    DeviceExtensions[' + ijstr + ']: ' + FGPUInfo[i].Devices[j].DeviceExtensions);
+    end;
+  end;
+end;
+
+
 procedure TfrmUIClickerGPUAlgorithmTester.spdbtnRunAllClick(Sender: TObject);
 var
   i, j, k: Integer;
@@ -292,31 +308,33 @@ begin
     StartTestRunner;
     try
       GetCLInfoFromRunner;
+      AddCLInfoToLog;
+
       GPUOptionCount := (1 shl Length(CGPUOptions));
       GPUOptionCountStr := IntToStr(GPUOptionCount);
 
-      prbPlatform.Max := Length(FDeviceCount);
-      PlatformCountStr := IntToStr(prbPlatform.Max);
+      prbPlatform.Max := Length(FGPUInfo) - 1;
+      PlatformCountStr := IntToStr(Length(FGPUInfo));
 
-      for i := 0 to Length(FDeviceCount) - 1 do
+      for i := 0 to Length(FGPUInfo) - 1 do
       begin
         prbPlatform.Position := i;
-        prbDevice.Max := FDeviceCount[i];
-        DeviceCountStr := IntToStr(prbDevice.Max);
-        lblPlatform.Caption := 'Platform: ' + IntToStr(i) + ' / ' + PlatformCountStr;
+        prbDevice.Max := Length(FGPUInfo[i].Devices) - 1;
+        DeviceCountStr := IntToStr(Length(FGPUInfo[i].Devices));
+        lblPlatform.Caption := 'Platform: ' + IntToStr(i + 1) + ' / ' + PlatformCountStr;
         lblPlatform.Repaint;
 
-        for j := 0 to FDeviceCount[i] - 1 do
+        for j := 0 to Length(FGPUInfo[i].Devices) - 1 do
         begin
-          prbGPUOption.Max := GPUOptionCount;
+          prbGPUOption.Max := GPUOptionCount - 1;
           prbDevice.Position := j;
-          lblDevice.Caption := 'Device: ' + IntToStr(j) + ' / ' + DeviceCountStr;
+          lblDevice.Caption := 'Device: ' + IntToStr(j + 1) + ' / ' + DeviceCountStr;
           lblDevice.Repaint;
 
           for k := 0 to GPUOptionCount - 1 do
           begin
             prbGPUOption.Position := k;
-            lblGPUOption.Caption := 'GPU Option: ' + IntToStr(k) + ' / ' + GPUOptionCountStr;
+            lblGPUOption.Caption := 'GPU Option: ' + IntToStr(k + 1) + ' / ' + GPUOptionCountStr;
             lblGPUOption.Repaint;
 
             GPUOptions := GenerateGPUOptionsForRequest(k);
@@ -357,7 +375,7 @@ procedure TfrmUIClickerGPUAlgorithmTester.FormCreate(Sender: TObject);
 var
   i, NewValue: Integer;
 begin
-  SetLength(FDeviceCount, 0);
+  SetLength(FGPUInfo, 0);
   FRunner_Proc := nil;
   FPaused := False;
   FStopping := False;
@@ -372,6 +390,19 @@ begin
     Sleep(33);
     Randomize;
   end;
+
+  GeneralConnectTimeout := 2000; //just a bit more than default
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.FormDestroy(Sender: TObject);
+var
+  i: Integer;
+begin
+  for i := 0 to Length(FGPUInfo) - 1 do
+    SetLength(FGPUInfo[i].Devices, 0);
+
+  SetLength(FGPUInfo, 0);
 end;
 
 

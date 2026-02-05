@@ -10,6 +10,7 @@ object frmUIClickerGPUAlgorithmTester: TfrmUIClickerGPUAlgorithmTester
   Constraints.MinWidth = 680
   LCLVersion = '8.4'
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   object spdbtnPause: TSpeedButton
     Left = 48
     Height = 40

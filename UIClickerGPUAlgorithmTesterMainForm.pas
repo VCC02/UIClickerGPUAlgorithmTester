@@ -31,19 +31,22 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Buttons, AsyncProcess,
   StdCtrls, ComCtrls, ExtCtrls, ClickerUtils, ClickerCLUtils, GPUTestUtils,
-  VirtualTrees, ImgList;
+  VirtualTrees, ImgList, Menus;
 
 type
   TEntryRec = record
     Entry: string;
     ImageList: TImageList;
     ImageIndex: Integer;
+    GPUOptions: string; //has content if the node is a GPU option node
+    PlatformIndex, DeviceIndex, GPUOptionsIndex: Integer;
   end;
   PEntryRec = ^TEntryRec;
 
   { TfrmUIClickerGPUAlgorithmTester }
 
   TfrmUIClickerGPUAlgorithmTester = class(TForm)
+    chkDisplayGPUOptionsInTree: TCheckBox;
     imglstTarget: TImageList;
     imgGPUOption: TImage;
     imglstTestStatus: TImageList;
@@ -53,7 +56,13 @@ type
     lblDevice: TLabel;
     lblGPUOption: TLabel;
     memLog: TMemo;
+    MenuItem_CollapseAll: TMenuItem;
+    MenuItem1_ExpandAll: TMenuItem;
+    Separator1: TMenuItem;
+    MenuItem_RerunSelectedTestOption: TMenuItem;
+    MenuItem_CopySelectedItemToClipboard: TMenuItem;
     PageControlMain: TPageControl;
+    pmVST: TPopupMenu;
     prbPlatform: TProgressBar;
     prbDevice: TProgressBar;
     prbGPUOption: TProgressBar;
@@ -63,8 +72,13 @@ type
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
     vstResults: TVirtualStringTree;
+    procedure chkDisplayGPUOptionsInTreeChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure MenuItem1_ExpandAllClick(Sender: TObject);
+    procedure MenuItem_CollapseAllClick(Sender: TObject);
+    procedure MenuItem_CopySelectedItemToClipboardClick(Sender: TObject);
+    procedure MenuItem_RerunSelectedTestOptionClick(Sender: TObject);
     procedure spdbtnPauseClick(Sender: TObject);
     procedure spdbtnRunAllClick(Sender: TObject);
     procedure spdbtnStopClick(Sender: TObject);
@@ -84,6 +98,7 @@ type
     FPaused: Boolean;
     FStopping: Boolean;
     FAuthStr: string;
+    FDisplayGPUOptionsInTree: Boolean;
 
     procedure AddToLog(s: string);
     procedure StartTestRunner;
@@ -91,6 +106,8 @@ type
 
     procedure GetCLInfoFromRunner;
     procedure AddCLInfoToLog;
+    function GetNodeText(ANode: PVirtualNode): string;
+    procedure SetAllNodesExpandedState(AIsExpanded: Boolean);
 
     procedure RunGPUTestPerTarget(APlatformIndex, ADeviceIndex, AGPUOptionIndex: Integer; AGPUOptions: string; ACategoryNode: PVirtualNode);
   public
@@ -105,7 +122,8 @@ implementation
 {$R *.frm}
 
 uses
-  UITestUtils, ClickerActionsClient, Expectations, PitstopTestUtils;
+  UITestUtils, ClickerActionsClient, Expectations, PitstopTestUtils,
+  Clipbrd;
 
 const
   CGPUOptions: array[0..7] of string = (
@@ -121,6 +139,8 @@ const
 
   CGetGPUInfoCategoryName = 'TTestGPUSettingsInfo';
   CFindSubControlOnGPUCategoryName = 'TTestGPUSettingsByTarget';
+
+  COptionStr = 'Option ';
 
 { TfrmUIClickerGPUAlgorithmTester }
 
@@ -294,6 +314,10 @@ begin
       NodeData^.Entry := TestName + ' / ' + TestResult + ' / ' + ErrorMessage + ' / ';
       NodeData^.ImageList := imglstTestStatus;
       NodeData^.ImageIndex := Ord(TestStatusAsStringToStatus(TestResult));
+      NodeData^.GPUOptions := '';
+      NodeData^.PlatformIndex := CategoryNodeData^.PlatformIndex;
+      NodeData^.DeviceIndex := CategoryNodeData^.DeviceIndex;
+      NodeData^.GPUOptionsIndex := CategoryNodeData^.GPUOptionsIndex;
 
       CategoryNodeData^.Entry := CategoryNodeData^.Entry + ' ' + TestResult;
       CategoryNodeData^.ImageIndex := Ord(GetCategoryStatusFromTestStatus(TTestStatus(CategoryNodeData^.ImageIndex), TTestStatus(NodeData^.ImageIndex)));
@@ -399,6 +423,10 @@ begin
         NodeData^.Entry := FGPUInfo[i].PlatformName;
         NodeData^.ImageList := imglstTarget;
         NodeData^.ImageIndex := 0;
+        NodeData^.GPUOptions := '';
+        NodeData^.PlatformIndex := i;
+        NodeData^.DeviceIndex := -1;
+        NodeData^.GPUOptionsIndex := -1;
 
         for j := 0 to Length(FGPUInfo[i].Devices) - 1 do
         begin
@@ -412,6 +440,10 @@ begin
           NodeData^.Entry := FGPUInfo[i].Devices[j].DeviceName;
           NodeData^.ImageList := imglstTarget;
           NodeData^.ImageIndex := 1;
+          NodeData^.GPUOptions := '';
+          NodeData^.PlatformIndex := -1;
+          NodeData^.DeviceIndex := j;
+          NodeData^.GPUOptionsIndex := -1;
 
           for k := 0 to GPUOptionCount - 1 do
           begin
@@ -421,9 +453,14 @@ begin
 
             GPUOptionNode := vstResults.AddChild(DeviceNode);
             NodeData := vstResults.GetNodeData(GPUOptionNode);
-            NodeData^.Entry := 'Option ' + IntToStr(k);
+            NodeData^.Entry := COptionStr + IntToStr(k);
 
             GPUOptions := GenerateGPUOptionsForRequest(k);
+            NodeData^.GPUOptions := StringReplace(GPUOptions, '&', ', ', [rfReplaceAll]);
+            NodeData^.PlatformIndex := -1;
+            NodeData^.DeviceIndex := -1;
+            NodeData^.GPUOptionsIndex := k;
+
             RunGPUTestPerTarget(i, j, k, GPUOptions, GPUOptionNode);
 
             if FStopping then
@@ -478,14 +515,23 @@ begin
 end;
 
 
-procedure TfrmUIClickerGPUAlgorithmTester.vstResultsGetText(
-  Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
-  TextType: TVSTTextType; var CellText: string);
+function TfrmUIClickerGPUAlgorithmTester.GetNodeText(ANode: PVirtualNode): string;
 var
   NodeData: PEntryRec;
 begin
-  NodeData := vstResults.GetNodeData(Node);
-  CellText := NodeData^.Entry;
+  NodeData := vstResults.GetNodeData(ANode);
+  Result := NodeData^.Entry;
+
+  if FDisplayGPUOptionsInTree and (NodeData^.GPUOptions <> '') then
+    Result := Result + '  ' + NodeData^.GPUOptions;
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.vstResultsGetText(
+  Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+  TextType: TVSTTextType; var CellText: string);
+begin
+  CellText := GetNodeText(Node);
 end;
 
 
@@ -497,6 +543,7 @@ begin
   FRunner_Proc := nil;
   FPaused := False;
   FStopping := False;
+  FDisplayGPUOptionsInTree := False;
 
   FAuthStr := 'abx';
   Randomize;
@@ -515,6 +562,14 @@ begin
 end;
 
 
+procedure TfrmUIClickerGPUAlgorithmTester.chkDisplayGPUOptionsInTreeChange(
+  Sender: TObject);
+begin
+  FDisplayGPUOptionsInTree := chkDisplayGPUOptionsInTree.Checked;
+  vstResults.Repaint;
+end;
+
+
 procedure TfrmUIClickerGPUAlgorithmTester.FormDestroy(Sender: TObject);
 var
   i: Integer;
@@ -523,6 +578,93 @@ begin
     SetLength(FGPUInfo[i].Devices, 0);
 
   SetLength(FGPUInfo, 0);
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.SetAllNodesExpandedState(AIsExpanded: Boolean);
+var
+  Node: PVirtualNode;
+begin
+  Node := vstResults.GetFirst;
+  if Node = nil then
+    Exit;
+
+  vstResults.BeginUpdate;
+  try
+    repeat
+      vstResults.Expanded[Node] := AIsExpanded;
+      Node := vstResults.GetNext(Node);
+    until Node = nil;
+  finally
+    vstResults.EndUpdate;
+  end;
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.MenuItem1_ExpandAllClick(
+  Sender: TObject);
+begin
+  SetAllNodesExpandedState(True);
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.MenuItem_CollapseAllClick(
+  Sender: TObject);
+begin
+  SetAllNodesExpandedState(False);
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.MenuItem_CopySelectedItemToClipboardClick(Sender: TObject);
+var
+  Node: PVirtualNode;
+begin
+  Node := vstResults.GetFirstSelected;
+  if Node = nil then
+    Exit;
+
+  Clipboard.AsText := GetNodeText(Node);
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.MenuItem_RerunSelectedTestOptionClick(
+  Sender: TObject);
+var
+  GPUOptionCount: Integer;
+  GPUOptionNode: PVirtualNode;
+  NodeData: PEntryRec;
+begin
+  GPUOptionNode := vstResults.GetFirstSelected;
+  if GPUOptionNode = nil then
+  begin
+    MessageBoxFunction('Please select a GPU Option item.', PChar(Caption), 0);
+    Exit;
+  end;
+
+  NodeData := vstResults.GetNodeData(GPUOptionNode);
+  if Pos(COptionStr, NodeData^.Entry) <> 1 then
+  begin
+    MessageBoxFunction('Please rerun from a GPU Option item.', PChar(Caption), 0);
+    Exit;
+  end;
+
+  FStopping := False;
+  StartTestRunner;
+  try
+    GetCLInfoFromRunner;
+    AddCLInfoToLog;
+
+    GPUOptionCount := (1 shl Length(CGPUOptions));
+    if NodeData^.GPUOptionsIndex > GPUOptionCount - 1 then
+    begin
+      MessageBoxFunction(PChar('The selected option index (' + IntToStr(NodeData^.GPUOptionsIndex) + ') is not longer available (' + IntToStr(GPUOptionCount - 1) + ').'), PChar(Caption), 0);
+      Exit;
+    end;
+
+    RunGPUTestPerTarget(NodeData^.PlatformIndex, NodeData^.DeviceIndex, NodeData^.GPUOptionsIndex, NodeData^.GPUOptions, GPUOptionNode);
+  finally
+    StopTestRunner;
+  end;
 end;
 
 

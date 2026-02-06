@@ -101,6 +101,10 @@ type
     FDisplayGPUOptionsInTree: Boolean;
 
     procedure AddToLog(s: string);
+
+    procedure LoadSettingsFromIni;
+    procedure SaveSettingsToIni;
+
     procedure StartTestRunner;
     procedure StopTestRunner;
 
@@ -123,7 +127,7 @@ implementation
 
 uses
   UITestUtils, ClickerActionsClient, Expectations, PitstopTestUtils,
-  Clipbrd;
+  Clipbrd, ClickerIniFiles;
 
 const
   CGPUOptions: array[0..7] of string = (
@@ -148,6 +152,52 @@ const
 procedure TfrmUIClickerGPUAlgorithmTester.AddToLog(s: string);
 begin
   memLog.Lines.Add(DateTimeToStr(Now) + '  ' + s);
+end;
+
+
+function GetIniFileName: string;
+begin
+  Result := ExtractFilePath(ParamStr(0)) + 'UIClickerGPUAlgorithmTester.ini';
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.LoadSettingsFromIni;
+var
+  Ini: TClkIniReadonlyFile;
+begin
+  Ini := TClkIniReadonlyFile.Create(GetIniFileName);
+  try
+    Left := Ini.ReadInteger('Window', 'Left', Left);
+    Top := Ini.ReadInteger('Window', 'Top',  Top);
+    Width := Ini.ReadInteger('Window', 'Width', Width);
+    Height := Ini.ReadInteger('Window', 'Height', Height);
+
+    chkDisplayGPUOptionsInTree.Checked := Ini.ReadBool('Settings', 'DisplayGPUOptionsInTree', chkDisplayGPUOptionsInTree.Checked);
+    PageControlMain.ActivePageIndex := Ini.ReadInteger('Settings', 'Main.ActivePageIndex', 0);
+  finally
+    Ini.Free;
+  end;
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.SaveSettingsToIni;
+var
+  Ini: TClkIniFile;
+begin
+  Ini := TClkIniFile.Create(GetIniFileName);
+  try
+    Ini.WriteInteger('Window', 'Left', Left);
+    Ini.WriteInteger('Window', 'Top', Top);
+    Ini.WriteInteger('Window', 'Width', Width);
+    Ini.WriteInteger('Window', 'Height', Height);
+
+    Ini.WriteBool('Settings', 'DisplayGPUOptionsInTree', chkDisplayGPUOptionsInTree.Checked);
+    Ini.WriteInteger('Settings', 'Main.ActivePageIndex', PageControlMain.ActivePageIndex);
+
+    Ini.UpdateFile;
+  finally
+    Ini.Free;
+  end;
 end;
 
 
@@ -559,6 +609,11 @@ begin
   GeneralConnectTimeout := 2000; //just a bit more than default
   vstResults.NodeDataSize := SizeOf(TEntryRec);
   PageControlMain.ActivePageIndex := 0;
+
+  try
+    LoadSettingsFromIni;
+  except
+  end;
 end;
 
 
@@ -578,6 +633,11 @@ begin
     SetLength(FGPUInfo[i].Devices, 0);
 
   SetLength(FGPUInfo, 0);
+
+  try
+    SaveSettingsToIni;
+  except
+  end;
 end;
 
 

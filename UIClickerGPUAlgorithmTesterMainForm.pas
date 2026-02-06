@@ -30,31 +30,53 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Buttons, AsyncProcess,
-  StdCtrls, ComCtrls, ExtCtrls, ClickerUtils, ClickerCLUtils, GPUTestUtils;
+  StdCtrls, ComCtrls, ExtCtrls, ClickerUtils, ClickerCLUtils, GPUTestUtils,
+  VirtualTrees, ImgList;
 
 type
+  TEntryRec = record
+    Entry: string;
+    ImageList: TImageList;
+    ImageIndex: Integer;
+  end;
+  PEntryRec = ^TEntryRec;
 
   { TfrmUIClickerGPUAlgorithmTester }
 
   TfrmUIClickerGPUAlgorithmTester = class(TForm)
+    imglstTarget: TImageList;
     imgGPUOption: TImage;
+    imglstTestStatus: TImageList;
     imgPlatform: TImage;
     imgDevice: TImage;
     lblPlatform: TLabel;
     lblDevice: TLabel;
     lblGPUOption: TLabel;
     memLog: TMemo;
+    PageControlMain: TPageControl;
     prbPlatform: TProgressBar;
     prbDevice: TProgressBar;
     prbGPUOption: TProgressBar;
     spdbtnPause: TSpeedButton;
     spdbtnRunAll: TSpeedButton;
     spdbtnStop: TSpeedButton;
+    TabSheet1: TTabSheet;
+    TabSheet2: TTabSheet;
+    vstResults: TVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure spdbtnPauseClick(Sender: TObject);
     procedure spdbtnRunAllClick(Sender: TObject);
     procedure spdbtnStopClick(Sender: TObject);
+    procedure vstResultsGetImageIndex(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+      var Ghosted: boolean; var ImageIndex: integer);
+    procedure vstResultsGetImageIndexEx(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+      var Ghosted: boolean; var ImageIndex: integer;
+      var ImageList: TCustomImageList);
+    procedure vstResultsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
   private
     FGPUInfo: TPlatformInfoArr;
 
@@ -70,7 +92,7 @@ type
     procedure GetCLInfoFromRunner;
     procedure AddCLInfoToLog;
 
-    procedure RunGPUTestPerTarget(APlatformIndex, ADeviceIndex, AGPUOptionIndex: Integer; AGPUOptions: string);
+    procedure RunGPUTestPerTarget(APlatformIndex, ADeviceIndex, AGPUOptionIndex: Integer; AGPUOptions: string; ACategoryNode: PVirtualNode);
   public
 
   end;
@@ -190,7 +212,32 @@ begin
 end;
 
 
-procedure TfrmUIClickerGPUAlgorithmTester.RunGPUTestPerTarget(APlatformIndex, ADeviceIndex, AGPUOptionIndex: Integer; AGPUOptions: string);
+function GetCategoryStatusFromTestStatus(ACurrentCategoryStatus, ATestStatus: TTestStatus): TTestStatus;
+const
+  CPassedToTestStatus: array[TTestStatus] of TTestStatus = (tsRunning, tsFailed, tsPassed, tsRunning, tsPaused);
+begin
+  Result := ACurrentCategoryStatus;
+
+  case ACurrentCategoryStatus of
+    tsInit:
+      Result := ATestStatus;
+
+    tsFailed:
+      ;
+
+    tsPassed:
+      Result := CPassedToTestStatus[ATestStatus];
+
+    tsRunning:
+      Result := ATestStatus;
+
+    tsPaused:
+      Result := ATestStatus;
+  end;
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.RunGPUTestPerTarget(APlatformIndex, ADeviceIndex, AGPUOptionIndex: Integer; AGPUOptions: string; ACategoryNode: PVirtualNode);
 //const
   //CAfterAllPrefix = 'AfterAll_AlwaysExecute';
   //CFindSubControlTestName = 'Test_FindDashBitOnMainUIClickerWindow_HappyFlow';  //Test_FindDashBitOnMainUIClickerWindow_HappyFlow=tsPassed(::)
@@ -200,6 +247,8 @@ var
   ListOfTests: TStringList;
   ErrorMessage, RunInfo: string;
   i: Integer;
+  Node: PVirtualNode;
+  NodeData, CategoryNodeData: PEntryRec;
 begin
   Params := '$SetPlatformsAndDevices$=True' + '&' +
             '$RunOnAllPlatformsAndDevices$=True' + '&' +
@@ -230,10 +279,24 @@ begin
     ListOfTests.LineBreak := #4#5;
     ListOfTests.Text := Response;
 
+    CategoryNodeData := vstResults.GetNodeData(ACategoryNode);
+    CategoryNodeData^.Entry := CategoryNodeData^.Entry + ': ';
+    CategoryNodeData^.ImageList := imglstTestStatus;
+    CategoryNodeData^.ImageIndex := Ord(tsInit);
+
     for i := 0 to ListOfTests.Count - 1 do
     begin
       TestLine := ListOfTests.Strings[i]; //e.g.  BeforeAll_AlwaysExecute=tsPassed(::)(:.:)Received CL vars.
       ParseTestResult(TestLine, TestName, TestResult, ErrorMessage, RunInfo);
+
+      Node := vstResults.AddChild(ACategoryNode);
+      NodeData := vstResults.GetNodeData(Node);
+      NodeData^.Entry := TestName + ' / ' + TestResult + ' / ' + ErrorMessage + ' / ';
+      NodeData^.ImageList := imglstTestStatus;
+      NodeData^.ImageIndex := Ord(TestStatusAsStringToStatus(TestResult));
+
+      CategoryNodeData^.Entry := CategoryNodeData^.Entry + ' ' + TestResult;
+      CategoryNodeData^.ImageIndex := Ord(GetCategoryStatusFromTestStatus(TTestStatus(CategoryNodeData^.ImageIndex), TTestStatus(NodeData^.ImageIndex)));
 
       AddToLog('    TestName: ' + TestName);
       AddToLog('        TestResult: ' + TestResult);
@@ -243,9 +306,13 @@ begin
       begin
         UIClickerGPUDbgResults := GetGPUDbgResultVarsFromAllVars(FastReplace_87ToReturn(RunInfo));  //RunInfo contains UIClicker vars
         AddToLog('        RunInfo: ' + UIClickerGPUDbgResults);
+        NodeData^.Entry := NodeData^.Entry + 'RunInfo: ' + UIClickerGPUDbgResults
       end
       else
+      begin
         AddToLog('        RunInfo: ' + RunInfo);
+        NodeData^.Entry := NodeData^.Entry + 'RunInfo: ' + RunInfo
+      end;
     end;
   finally
     ListOfTests.Free;
@@ -299,6 +366,8 @@ var
   GPUOptions: string;
   GPUOptionCount: Integer;
   PlatformCountStr, DeviceCountStr, GPUOptionCountStr: string;
+  PlatformNode, DeviceNode, GPUOptionNode: PVirtualNode;
+  NodeData: PEntryRec;
 begin
   FStopping := False;
   spdbtnRunAll.Enabled := False;
@@ -309,6 +378,7 @@ begin
     try
       GetCLInfoFromRunner;
       AddCLInfoToLog;
+      vstResults.Clear;
 
       GPUOptionCount := (1 shl Length(CGPUOptions));
       GPUOptionCountStr := IntToStr(GPUOptionCount);
@@ -324,6 +394,12 @@ begin
         lblPlatform.Caption := 'Platform: ' + IntToStr(i + 1) + ' / ' + PlatformCountStr;
         lblPlatform.Repaint;
 
+        PlatformNode := vstResults.AddChild(vstResults.RootNode);
+        NodeData := vstResults.GetNodeData(PlatformNode);
+        NodeData^.Entry := FGPUInfo[i].PlatformName;
+        NodeData^.ImageList := imglstTarget;
+        NodeData^.ImageIndex := 0;
+
         for j := 0 to Length(FGPUInfo[i].Devices) - 1 do
         begin
           prbGPUOption.Max := GPUOptionCount - 1;
@@ -331,14 +407,24 @@ begin
           lblDevice.Caption := 'Device: ' + IntToStr(j + 1) + ' / ' + DeviceCountStr;
           lblDevice.Repaint;
 
+          DeviceNode := vstResults.AddChild(PlatformNode);
+          NodeData := vstResults.GetNodeData(DeviceNode);
+          NodeData^.Entry := FGPUInfo[i].Devices[j].DeviceName;
+          NodeData^.ImageList := imglstTarget;
+          NodeData^.ImageIndex := 1;
+
           for k := 0 to GPUOptionCount - 1 do
           begin
             prbGPUOption.Position := k;
             lblGPUOption.Caption := 'GPU Option: ' + IntToStr(k + 1) + ' / ' + GPUOptionCountStr;
             lblGPUOption.Repaint;
 
+            GPUOptionNode := vstResults.AddChild(DeviceNode);
+            NodeData := vstResults.GetNodeData(GPUOptionNode);
+            NodeData^.Entry := 'Option ' + IntToStr(k);
+
             GPUOptions := GenerateGPUOptionsForRequest(k);
-            RunGPUTestPerTarget(i, j, k, GPUOptions);
+            RunGPUTestPerTarget(i, j, k, GPUOptions, GPUOptionNode);
 
             if FStopping then
               Exit;
@@ -371,6 +457,38 @@ begin
 end;
 
 
+procedure TfrmUIClickerGPUAlgorithmTester.vstResultsGetImageIndex(
+  Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind;
+  Column: TColumnIndex; var Ghosted: boolean; var ImageIndex: integer);
+begin
+  //
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.vstResultsGetImageIndexEx(
+  Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind;
+  Column: TColumnIndex; var Ghosted: boolean; var ImageIndex: integer;
+  var ImageList: TCustomImageList);
+var
+  NodeData: PEntryRec;
+begin
+  NodeData := vstResults.GetNodeData(Node);
+  ImageList := NodeData^.ImageList;
+  ImageIndex := NodeData^.ImageIndex;
+end;
+
+
+procedure TfrmUIClickerGPUAlgorithmTester.vstResultsGetText(
+  Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
+  TextType: TVSTTextType; var CellText: string);
+var
+  NodeData: PEntryRec;
+begin
+  NodeData := vstResults.GetNodeData(Node);
+  CellText := NodeData^.Entry;
+end;
+
+
 procedure TfrmUIClickerGPUAlgorithmTester.FormCreate(Sender: TObject);
 var
   i, NewValue: Integer;
@@ -392,6 +510,8 @@ begin
   end;
 
   GeneralConnectTimeout := 2000; //just a bit more than default
+  vstResults.NodeDataSize := SizeOf(TEntryRec);
+  PageControlMain.ActivePageIndex := 0;
 end;
 
 

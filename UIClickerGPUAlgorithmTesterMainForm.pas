@@ -47,11 +47,13 @@ type
 
   TfrmUIClickerGPUAlgorithmTester = class(TForm)
     chkDisplayGPUOptionsInTree: TCheckBox;
+    cmbTestCategory: TComboBox;
     imglstTarget: TImageList;
     imgGPUOption: TImage;
     imglstTestStatus: TImageList;
     imgPlatform: TImage;
     imgDevice: TImage;
+    lblTestCategory: TLabel;
     lblPlatform: TLabel;
     lblDevice: TLabel;
     lblGPUOption: TLabel;
@@ -71,6 +73,7 @@ type
     spdbtnStop: TSpeedButton;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
+    TabSheet3: TTabSheet;
     vstResults: TVirtualStringTree;
     procedure chkDisplayGPUOptionsInTreeChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -175,6 +178,7 @@ begin
 
     chkDisplayGPUOptionsInTree.Checked := Ini.ReadBool('Settings', 'DisplayGPUOptionsInTree', chkDisplayGPUOptionsInTree.Checked);
     PageControlMain.ActivePageIndex := Ini.ReadInteger('Settings', 'Main.ActivePageIndex', 0);
+    cmbTestCategory.ItemIndex := Ini.ReadInteger('Settings', 'TestCategory', cmbTestCategory.ItemIndex);
   finally
     Ini.Free;
   end;
@@ -194,6 +198,7 @@ begin
 
     Ini.WriteBool('Settings', 'DisplayGPUOptionsInTree', chkDisplayGPUOptionsInTree.Checked);
     Ini.WriteInteger('Settings', 'Main.ActivePageIndex', PageControlMain.ActivePageIndex);
+    Ini.WriteInteger('Settings', 'TestCategory', cmbTestCategory.ItemIndex);
 
     Ini.UpdateFile;
   finally
@@ -322,7 +327,7 @@ var
   NodeData, CategoryNodeData: PEntryRec;
 begin
   Params := '$SetPlatformsAndDevices$=True' + '&' +
-            '$RunOnAllPlatformsAndDevices$=True' + '&' +
+            '$RunOnAllPlatformsAndDevices$=False' + '&' +
             '$SelectedPlatorm$=' + IntToStr(APlatformIndex) + '&' +
             '$SelectedDevice$=' + IntToStr(ADeviceIndex) + '&' +
             '$SetGPUDbgBuffer$=True' + '&' +
@@ -341,8 +346,12 @@ begin
     end;
   end;
 
-  //Params := 'Category=' + CFindSubControlOnGPUCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;        //ToDo: add UI option for these two
-  Params := 'Category=' + CFindSubControlOnGPUSingleActionCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+  case cmbTestCategory.ItemIndex of
+    0: Params := 'Category=' + CFindSubControlOnGPUCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+    1: Params := 'Category=' + CFindSubControlOnGPUSingleActionCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+    else
+      Params := 'Category=Undefined' + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+  end;
 
   Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_RunCategory + '?' + Params);
 
@@ -534,6 +543,7 @@ begin
     spdbtnRunAll.Enabled := True;
     spdbtnPause.Enabled := False;
     spdbtnStop.Enabled := False;
+    memLog.Lines.Add(''); //for the next run
   end;
 end;
 

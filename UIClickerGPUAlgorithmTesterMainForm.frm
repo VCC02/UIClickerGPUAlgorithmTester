@@ -544,6 +544,36 @@ object frmUIClickerGPUAlgorithmTester: TfrmUIClickerGPUAlgorithmTester
         OnGetImageIndexEx = vstResultsGetImageIndexEx
       end
     end
+    object TabSheet3: TTabSheet
+      Caption = 'Settings'
+      ClientHeight = 172
+      ClientWidth = 656
+      object lblTestCategory: TLabel
+        Left = 8
+        Height = 15
+        Top = 8
+        Width = 71
+        Caption = 'Test category'
+      end
+      object cmbTestCategory: TComboBox
+        Left = 8
+        Height = 21
+        Hint = 'TTestGPUSettingsByTarget'#13#10'  This category uses UIClicker''s main window as a background and searches the "-bit" string on it.'#13#10'  In order to be visible, the test includes actions to find the window and bring it to front.'#13#10'  The FindSubContol action contains two font profiles.'#13#10'  These extra actions are executed on every iteration, which cause the overall testing time to take longer.'#13#10#13#10'TTestGPUSettingsByTargetWithSingleAction'#13#10'  This category uses predefined background and searched bitmaps, to improve the testing time.'#13#10'  The test is made of a single FindSubControl action.'
+        Top = 28
+        Width = 280
+        ItemHeight = 15
+        ItemIndex = 1
+        Items.Strings = (
+          'TTestGPUSettingsByTarget'
+          'TTestGPUSettingsByTargetWithSingleAction'
+        )
+        ParentShowHint = False
+        ShowHint = True
+        Style = csOwnerDrawFixed
+        TabOrder = 0
+        Text = 'TTestGPUSettingsByTargetWithSingleAction'
+      end
+    end
   end
   object chkDisplayGPUOptionsInTree: TCheckBox
     Left = 512

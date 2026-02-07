@@ -143,6 +143,7 @@ const
 
   CGetGPUInfoCategoryName = 'TTestGPUSettingsInfo';
   CFindSubControlOnGPUCategoryName = 'TTestGPUSettingsByTarget';
+  CFindSubControlOnGPUSingleActionCategoryName = 'TTestGPUSettingsByTargetWithSingleAction';
 
   COptionStr = 'Option ';
 
@@ -340,7 +341,9 @@ begin
     end;
   end;
 
-  Params := 'Category=' + CFindSubControlOnGPUCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+  //Params := 'Category=' + CFindSubControlOnGPUCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;        //ToDo: add UI option for these two
+  Params := 'Category=' + CFindSubControlOnGPUSingleActionCategoryName + '&' + CPitstopCmd_Param_Auth + '=' + FAuthStr;
+
   Response := SendTextRequestToServer('http://127.0.0.1:7472/' + CPitstopCmd_RunCategory + '?' + Params);
 
   AddToLog('Platform ' + IntToStr(APlatformIndex) + ', Device ' + IntToStr(ADeviceIndex) + ', GPUOption ' + IntToStr(AGPUOptionIndex) + ': ');

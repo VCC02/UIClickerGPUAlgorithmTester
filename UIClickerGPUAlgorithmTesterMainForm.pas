@@ -453,7 +453,7 @@ var
   GPUOptionCount: Integer;
   PlatformCountStr, DeviceCountStr, GPUOptionCountStr: string;
   PlatformNode, DeviceNode, GPUOptionNode: PVirtualNode;
-  NodeData: PEntryRec;
+  PlatformNodeData, DeviceNodeData, GPUOptionNodeData: PEntryRec;
 begin
   FStopping := False;
   spdbtnRunAll.Enabled := False;
@@ -481,14 +481,14 @@ begin
         lblPlatform.Repaint;
 
         PlatformNode := vstResults.AddChild(vstResults.RootNode);
-        NodeData := vstResults.GetNodeData(PlatformNode);
-        NodeData^.Entry := FGPUInfo[i].PlatformName;
-        NodeData^.ImageList := imglstTarget;
-        NodeData^.ImageIndex := 0;
-        NodeData^.GPUOptions := '';
-        NodeData^.PlatformIndex := i;
-        NodeData^.DeviceIndex := -1;
-        NodeData^.GPUOptionsIndex := -1;
+        PlatformNodeData := vstResults.GetNodeData(PlatformNode);
+        PlatformNodeData^.Entry := FGPUInfo[i].PlatformName;
+        PlatformNodeData^.ImageList := imglstTarget;
+        PlatformNodeData^.ImageIndex := 0;
+        PlatformNodeData^.GPUOptions := '';
+        PlatformNodeData^.PlatformIndex := i;
+        PlatformNodeData^.DeviceIndex := -1;
+        PlatformNodeData^.GPUOptionsIndex := -1;
 
         for j := 0 to Length(FGPUInfo[i].Devices) - 1 do
         begin
@@ -498,14 +498,14 @@ begin
           lblDevice.Repaint;
 
           DeviceNode := vstResults.AddChild(PlatformNode);
-          NodeData := vstResults.GetNodeData(DeviceNode);
-          NodeData^.Entry := FGPUInfo[i].Devices[j].DeviceName;
-          NodeData^.ImageList := imglstTarget;
-          NodeData^.ImageIndex := 1;
-          NodeData^.GPUOptions := '';
-          NodeData^.PlatformIndex := -1;
-          NodeData^.DeviceIndex := j;
-          NodeData^.GPUOptionsIndex := -1;
+          DeviceNodeData := vstResults.GetNodeData(DeviceNode);
+          DeviceNodeData^.Entry := FGPUInfo[i].Devices[j].DeviceName;
+          DeviceNodeData^.ImageList := imglstTarget;
+          DeviceNodeData^.ImageIndex := 1;
+          DeviceNodeData^.GPUOptions := '';
+          DeviceNodeData^.PlatformIndex := PlatformNodeData^.PlatformIndex;
+          DeviceNodeData^.DeviceIndex := j;
+          DeviceNodeData^.GPUOptionsIndex := -1;
 
           for k := 0 to GPUOptionCount - 1 do
           begin
@@ -514,14 +514,14 @@ begin
             lblGPUOption.Repaint;
 
             GPUOptionNode := vstResults.AddChild(DeviceNode);
-            NodeData := vstResults.GetNodeData(GPUOptionNode);
-            NodeData^.Entry := COptionStr + IntToStr(k);
+            GPUOptionNodeData := vstResults.GetNodeData(GPUOptionNode);
+            GPUOptionNodeData^.Entry := COptionStr + IntToStr(k);
 
             GPUOptions := GenerateGPUOptionsForRequest(k);
-            NodeData^.GPUOptions := StringReplace(GPUOptions, '&', ', ', [rfReplaceAll]);
-            NodeData^.PlatformIndex := -1;
-            NodeData^.DeviceIndex := -1;
-            NodeData^.GPUOptionsIndex := k;
+            GPUOptionNodeData^.GPUOptions := StringReplace(GPUOptions, '&', ', ', [rfReplaceAll]);
+            GPUOptionNodeData^.PlatformIndex := DeviceNodeData^.PlatformIndex;
+            GPUOptionNodeData^.DeviceIndex := DeviceNodeData^.DeviceIndex;
+            GPUOptionNodeData^.GPUOptionsIndex := k;
 
             RunGPUTestPerTarget(i, j, k, GPUOptions, GPUOptionNode);
 
@@ -734,6 +734,7 @@ begin
       Exit;
     end;
 
+    AddToLog('Rerunning test at PlatformIndex=' + IntToStr(NodeData^.PlatformIndex) + '  DeviceIndex=' + IntToStr(NodeData^.DeviceIndex) + '  GPUOptions=' + IntToStr(NodeData^.GPUOptionsIndex));
     RunGPUTestPerTarget(NodeData^.PlatformIndex, NodeData^.DeviceIndex, NodeData^.GPUOptionsIndex, NodeData^.GPUOptions, GPUOptionNode);
   finally
     StopTestRunner;
